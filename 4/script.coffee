@@ -3,6 +3,10 @@
 p = window.paper
 tool = new p.Tool
 
+# shortcuts
+
+abs = Math.abs
+
 # utils
 
 class Module
@@ -30,13 +34,17 @@ class World extends Module
 class Boid extends Module
 
   @radius = 5
+  @minSpeed = 2
+  @maxSpeed = 10
+  @slowDownRate = 0.98
 
   constructor: (x, y) ->
-    @velocity = p.Point.random()
+    @velocity = new p.Point (randomNum -10, 10), (randomNum -10, 10)
     @normalizeVelocity()
+
     @circle = new p.Path.Circle {x:x, y:y}, Boid.radius
     @circle.style =
-      fillColor: new p.HsbColor (randomNum 1, 360), 1, 1
+      fillColor: '#fff'
 
   normalizeVelocity: ->
     @velocity = @velocity.normalize 5
@@ -48,17 +56,48 @@ class Boid extends Module
     return @ if pos.isInside vb
     if pos.x > vb.width + Boid.radius
       @velocity.x = -@velocity.x
+      if @velocity.x > -12
+        @velocity.x = -12
+        @normalizeVelocity()
     if pos.y > vb.height + Boid.radius
       @velocity.y = -@velocity.y
+      if @velocity.y > -12
+        @velocity.y = -12
+        @normalizeVelocity()
     if pos.x < 0 - Boid.radius
       @velocity.x = -@velocity.x
+      if @velocity.x < 12
+        @velocity.x = 12
+        @normalizeVelocity()
     if pos.y < 0 - Boid.radius
       @velocity.y = -@velocity.y
+      if @velocity.y < 12
+        @velocity.y = 12
+        @normalizeVelocity()
+    @
+
+  _drawArrow: ->
+    @arrow.remove() if @arrow?
+    center = @circle.position
+    @arrow = new p.Path.Line center, (center.add (@velocity.multiply 5))
+    @arrow.style =
+      strokeColor: '#fff'
+      strokeWidth: 1
     @
 
   move: ->
     @_handleEdgeBounce()
+    @_drawArrow()
     @circle.position = @circle.position.add @velocity
+    @
+
+  align: (boids) ->
+    return @ if boids is null
+    @velocity = @velocity.multiply 50
+    for boid in boids
+      @velocity = @velocity.add boid.velocity
+    @velocity = @velocity.divide (50 + boids.length)
+    @normalizeVelocity()
     @
 
 # Boid manager
@@ -104,7 +143,24 @@ class BoidCollection extends Module
       i -= 1
     @
 
+  _getItemsNear: (item, radius) ->
+    posA = item.circle.position
+    radius = radius * radius
+    res = _.filter @_items, (current) ->
+      return false if current is item
+      posB = current.circle.position
+      distanceX = posB.x - posA.x
+      distanceY = posB.y - posA.y
+      distance = distanceX * distanceX + distanceY * distanceY
+      return true if distance < radius
+      false
+    return null if res.length is 0
+    res
+
   update: ->
+    for item in @_items
+      nearItems = @_getItemsNear item, 100
+      item.align nearItems
     @_handleCollision()
     for item in @_items
       item.move()
