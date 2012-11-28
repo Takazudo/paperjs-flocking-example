@@ -1,0 +1,28 @@
+* {
+	margin:0;
+	padding:0;
+}
+body {
+	background:#333;
+}
+#loaded {
+	position:fixed;
+	right:10px;
+	top:10px;
+	color:#fff;
+	font-size:30px;
+}
+#hiddenImgs,
+#hiddenVideos {
+	position:absolute;
+	left:0;
+	top:0;
+	display:none;
+}
+#explanations {
+	position:fixed;
+	right:10px;
+	top:10px;
+	color:#fff;
+	font-size:30px;
+}
